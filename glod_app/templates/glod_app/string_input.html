@@ -49,21 +49,34 @@
 {% if not network_data and not error %}
 <div class="text-center my-4">
   <form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="build_network" value="1" />
-    <input type="hidden" name="network_type" value="full" />
+  {% csrf_token %}
+  <input type="hidden" name="build_network" value="1" />
+  <input type="hidden" name="network_type" value="full" />
 
-    <div class="mb-3">
-      <label for="confidence" class="form-label">Confidence Score:</label>
+  <!-- INPUT BERSEBELAHAN -->
+  <div class="row">
+    <!-- Confidence -->
+    <div class="col-md-6 mb-3">
+      <label for="confidence" class="form-label">Confidence Score</label>
       <select class="form-select" name="confidence" id="confidence">
-        <option value="0.900" {% if selected_confidence == "0.900" %}selected{% endif %}>highest confidence (0.900)</option>
-        <option value="0.700" {% if selected_confidence == "0.700" %}selected{% endif %}>high confidence (0.700)</option>
-        <option value="0.400" {% if selected_confidence == "0.400" %}selected{% endif %}>medium confidence (0.400)</option>
-        <option value="0.150" {% if selected_confidence == "0.150" %}selected{% endif %}>low confidence (0.150)</option>
+        <option value="0.900" {% if selected_confidence == "0.900" %}selected{% endif %}>
+          Highest confidence (0.900)
+        </option>
+        <option value="0.700" {% if selected_confidence == "0.700" %}selected{% endif %}>
+          High confidence (0.700)
+        </option>
+        <option value="0.400" {% if selected_confidence == "0.400" %}selected{% endif %}>
+          Medium confidence (0.400)
+        </option>
+        <option value="0.150" {% if selected_confidence == "0.150" %}selected{% endif %}>
+          Low confidence (0.150)
+        </option>
       </select>
     </div>
-    <div class="mb-3">
-      <label for="organism" class="form-label">Organisms:</label>
+
+    <!-- Organism -->
+    <div class="col-md-6 mb-3">
+      <label for="organism" class="form-label">Organism</label>
       <select class="form-select" name="organism" id="organism">
         <option value="9606" {% if selected_organism == "9606" %}selected{% endif %}>Homo sapiens</option>
         <option value="10090" {% if selected_organism == "10090" %}selected{% endif %}>Mus musculus</option>
@@ -78,11 +91,16 @@
         <option value="3702" {% if selected_organism == "3702" %}selected{% endif %}>Arabidopsis thaliana</option>
       </select>
     </div>
+  </div>
 
-    <button type="submit" class="btn btn-primary btn-lg">
+  <!-- BUTTON -->
+  <div class="text-center mt-3">
+    <button type="submit" class="btn btn-primary btn-lg px-5">
       <i class="fas fa-cogs"></i> Bangun Jaringan Protein
     </button>
-  </form>
+  </div>
+</form>
+
   
 
 </div>
