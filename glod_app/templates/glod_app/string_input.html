@@ -10,6 +10,22 @@
 .bg-primary{background-color:var(--primary-blue)!important}
 .card-header.bg-primary{background-color:var(--primary-blue)!important}
 .start-btn{background:var(--primary-blue)!important}
+.page-title {
+  font-size: 2rem;
+  color: #1976d2;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 25px;
+}
+
+.section-heading {
+  color: #1976d2;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 13px;
+}
+
 </style>
 {% endblock %}
 
@@ -19,13 +35,13 @@
     <div class="col-lg-10">
       <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="mb-0">Pembangunan Jaringan Protein</h3>
+          <div class="d-flex justify-content-center align-items-center mb-3">
+            <h1 class="page-title">Pembangunan Jaringan Protein</h1>
           </div>
 
           <div class="card mb-3">
             <div class="card-body">
-              <h5 class="card-title">Input Genes</h5>
+              <h5 class="card-title section-heading">Input Genes</h5>
               <p class="card-text">
                 Total Genes untuk Visualisasi: <strong>{{ original_count }}</strong>
               </p>
@@ -57,7 +73,7 @@
   <div class="row">
     <!-- Confidence -->
     <div class="col-md-6 mb-3">
-      <label for="confidence" class="form-label">Confidence Score</label>
+      <label for="confidence" class="form-label section-heading">Confidence Score</label>
       <select class="form-select" name="confidence" id="confidence">
         <option value="0.900" {% if selected_confidence == "0.900" %}selected{% endif %}>
           Highest confidence (0.900)
@@ -76,7 +92,7 @@
 
     <!-- Organism -->
     <div class="col-md-6 mb-3">
-      <label for="organism" class="form-label">Organism</label>
+      <label for="organism" class="form-label section-heading">Organism</label>
       <select class="form-select" name="organism" id="organism">
         <option value="9606" {% if selected_organism == "9606" %}selected{% endif %}>Homo sapiens</option>
         <option value="10090" {% if selected_organism == "10090" %}selected{% endif %}>Mus musculus</option>
