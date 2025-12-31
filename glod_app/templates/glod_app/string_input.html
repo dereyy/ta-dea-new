@@ -46,21 +46,58 @@
                 Total Genes untuk Visualisasi: <strong>{{ original_count }}</strong>
               </p>
               {% if original_count and original_count != total_genes %}
-              
-              {% endif %} 
-              {% if mapped_genes %}
-              <p class="card-text">
-                Mapped to STRING DB: <strong>{{ mapped_genes }}</strong>
-              </p>
-              {% endif %} 
-              {% if total_nodes %}
-              <p class="card-text">
-                Network Nodes: <strong id="current-nodes-count">{{ total_nodes }}</strong>, Edges:
-                <strong id="current-edges-count">{{ total_edges }}</strong>
-              </p>
-              {% endif %}
-            </div>
-          </div>
+        
+        {% if mapped_genes or total_nodes %}
+<div class="row g-3 mb-4">
+  
+  {% if mapped_genes %}
+  <div class="col-md-4">
+    <div class="card text-white bg-primary shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="small fw-semibold mb-1">
+          Mapped to STRING DB
+        </div>
+        <div class="display-6 fw-bold">
+          {{ mapped_genes }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if total_nodes %}
+  <!-- Network Nodes -->
+  <div class="col-md-4">
+    <div class="card text-white bg-warning shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="small fw-semibold mb-1">
+          Network Nodes
+        </div>
+        <div class="display-6 fw-bold">
+          <span id="current-nodes-count">{{ total_nodes }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Network Edges -->
+  <div class="col-md-4">
+    <div class="card text-white bg-danger shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="small fw-semibold mb-1">
+          Network Edges
+        </div>
+        <div class="display-6 fw-bold">
+          <span id="current-edges-count">{{ total_edges }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+{% endif %}
 
 {% if not network_data and not error %}
 <div class="text-center my-4">
