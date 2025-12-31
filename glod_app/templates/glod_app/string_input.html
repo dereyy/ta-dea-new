@@ -73,7 +73,7 @@
   <div class="row">
     <!-- Confidence -->
     <div class="col-md-6 mb-3">
-      <label for="confidence" class="form-label section-heading">Confidence Score</label>
+      <label for="confidence" class="form-label section-heading text-start d-block ms-3">Confidence Score</label>
       <select class="form-select" name="confidence" id="confidence">
         <option value="0.900" {% if selected_confidence == "0.900" %}selected{% endif %}>
           Highest confidence (0.900)
@@ -92,7 +92,7 @@
 
     <!-- Organism -->
     <div class="col-md-6 mb-3">
-      <label for="organism" class="form-label section-heading">Organism</label>
+      <label for="organism" class="form-label section-heading text-start d-block ms-3">Organism</label>
       <select class="form-select" name="organism" id="organism">
         <option value="9606" {% if selected_organism == "9606" %}selected{% endif %}>Homo sapiens</option>
         <option value="10090" {% if selected_organism == "10090" %}selected{% endif %}>Mus musculus</option>
