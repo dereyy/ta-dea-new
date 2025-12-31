@@ -146,11 +146,12 @@
               <th>Anggota Protein</th>
               <th>Protein Overlap</th>
               <th>Normalized Node Cut (Ψ)</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {% for community in communities %}
-            <tr>
+            <tr id="community-row-{{ community.id }}">
               <td>
                 <span class="badge" style="background-color: {{ color_palette|slice:forloop.counter0|slice:1 }}; color: white; font-size: 14px; padding: 6px 10px;">
                   Komunitas {{ community.id }}
@@ -186,6 +187,24 @@
                 <span class="badge bg-info text-white" style="font-size: 14px; padding: 6px 10px;">
                   {{ community.psi }}
                 </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="toggleCommunityVisualization({{ community.id }})">
+                  <i class="fas fa-chart-network"></i> Tampilkan Komunitas
+                </button>
+              </td>
+            </tr>
+            <tr id="visualization-row-{{ community.id }}" style="display: none;">
+              <td colspan="7">
+                <div style="padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
+                  <div style="margin-bottom: 10px;">
+                    <strong>Visualisasi Komunitas {{ community.id }}</strong>
+                    <button class="btn btn-sm btn-secondary float-end" onclick="toggleCommunityVisualization({{ community.id }})">
+                      <i class="fas fa-times"></i> Sembunyikan
+                    </button>
+                  </div>
+                  <div id="community-network-container-{{ community.id }}" style="height: 400px; border: 1px solid #ddd; border-radius: 4px;"></div>
+                </div>
               </td>
             </tr>
             {% endfor %}
@@ -448,6 +467,118 @@
   // Fungsi download visualisasi (stub untuk sekarang)
   function downloadVisualization() {
     alert('Fitur download visualisasi PNG belum diimplementasikan');
+  }
+
+  // Menyimpan network instances untuk setiap komunitas
+  const communityNetworks = {};
+
+  // Fungsi untuk toggle visualisasi komunitas
+  function toggleCommunityVisualization(communityId) {
+    const visualizationRow = document.getElementById(`visualization-row-${communityId}`);
+    const container = document.getElementById(`community-network-container-${communityId}`);
+    
+    if (visualizationRow.style.display === 'none') {
+      visualizationRow.style.display = 'table-row';
+      
+      // Jika belum di-render, render sekarang
+      if (!communityNetworks[communityId]) {
+        renderCommunityNetwork(communityId, container);
+      } else {
+        // Jika sudah ada, refresh ukuran container
+        setTimeout(() => {
+          communityNetworks[communityId].fit();
+        }, 100);
+      }
+    } else {
+      visualizationRow.style.display = 'none';
+    }
+  }
+
+  // Fungsi untuk render jaringan komunitas
+  function renderCommunityNetwork(communityId, container) {
+    // Filter nodes dan edges yang termasuk komunitas ini
+    const communityNodes = visNodes.filter(node => node.communities.includes(communityId));
+    const communityNodeIds = new Set(communityNodes.map(node => node.id));
+    const communityEdges = visEdges.filter(edge => 
+      communityNodeIds.has(edge.from) && communityNodeIds.has(edge.to)
+    );
+
+    // Buat DataSet untuk komunitas ini
+    const commNodes = new vis.DataSet(communityNodes.map(node => ({
+      id: node.id,
+      label: node.label,
+      title: node.label,
+      color: {
+        background: node.color,
+        border: '#2B7CE9',
+        highlight: {
+          background: node.color,
+          border: '#000000'
+        }
+      },
+      font: {
+        size: 14,
+        color: '#000',
+        bold: { color: '#000' }
+      }
+    })));
+
+    const commEdges = new vis.DataSet(communityEdges.map(edge => ({
+      from: edge.from,
+      to: edge.to,
+      color: {
+        color: '#999999',
+        highlight: '#000000'
+      },
+      width: 2
+    })));
+
+    // Konfigurasi untuk komunitas network
+    const options = {
+      physics: {
+        enabled: true,
+        stabilization: {
+          iterations: 200,
+          updateInterval: 50,
+          fit: true
+        },
+        barnesHut: {
+          gravitationalConstant: -2000,
+          centralGravity: 0.3,
+          springLength: 100,
+          springConstant: 0.05,
+          damping: 0.95,
+          avoidOverlap: 0.5
+        }
+      },
+      nodes: {
+        shape: 'dot',
+        size: 25,
+        borderWidth: 2,
+        font: {
+          size: 14,
+          face: 'Arial'
+        }
+      },
+      edges: {
+        width: 2,
+        smooth: {
+          type: 'continuous',
+          forceDirection: 'none',
+          roundness: 0.5
+        }
+      },
+      interaction: {
+        hover: true,
+        zoomView: true,
+        dragView: true
+      },
+      configure: false
+    };
+
+    // Render network
+    const data = { nodes: commNodes, edges: commEdges };
+    communityNetworks[communityId] = new vis.Network(container, data, options);
   }
 </script>
 {% endif %} 
