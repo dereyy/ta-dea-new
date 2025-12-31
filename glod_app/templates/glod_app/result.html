@@ -1,19 +1,28 @@
 {% extends "base.html" %}
 
 {% block title %}Hasil Analisis GLOD - GLOD Community Detector{% endblock %}
-
+{% block extra_head %}
+<style>
+.page-title {
+  font-size: 2rem;
+  color: #1976d2;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 25px;
+}
+.section-heading {
+  color: #1976d2;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 13px;
+}
+</style>
+{% endblock %}
 {% block content %}
 <div class="container-fluid mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">GLOD - Hasil Deteksi Komunitas</h3>
-    <div>
-      <a href="{% url 'glod_process' %}" class="btn btn-secondary me-2">
-        <i class="fas fa-redo"></i> Ubah Parameter
-      </a>
-      <a href="/string/input/" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Kembali ke Network
-      </a>
-    </div>
+  <div class="d-flex justify-content-center align-items-center mb-3">
+    <h3 class="mb-0 page-title">Hasil Deteksi Komunitas</h3>
   </div>
 
   {% if error %}
@@ -27,96 +36,60 @@
     {% endif %}
   </div>
   {% else %}
+  <div class="row mb-4 g-3">
 
-  <div class="row mb-4">
-    <div class="col-md-6">
-      <div class="card bg-primary text-white">
-        <div class="card-body">
+    <!-- Jumlah Komunitas -->
+    <div class="col-md-3">
+      <div class="card bg-primary text-white h-100 shadow-sm">
+        <div class="card-body text-center">
           <h6 class="card-title">Jumlah Komunitas</h6>
           <h2 class="mb-0">{{ num_communities }}</h2>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Normalized Node Cut & Conductance Metrics -->
-  <div class="row mb-4">
-    <div class="col-md-12">
-      <div class="card bg-info text-white">
-        <div class="card-body">
+    <!-- Normalized Node Cut -->
+    <div class="col-md-3">
+      <div class="card bg-info text-white h-100 shadow-sm">
+        <div class="card-body text-center">
           <h6 class="card-title">Normalized Node Cut (Ψ)</h6>
           <h2 class="mb-0">{{ avg_psi_node_cut }}</h2>
-          <small class="d-block mt-2">Havemann et al. (2012) - Semakin rendah semakin baik</small>
         </div>
       </div>
     </div>
-  </div>
 
-  {% if has_nmi_metrics %}
-  <div class="row mb-4">
-    <div class="col-md-4">
-      <div class="card bg-dark text-white">
-        <div class="card-body">
-          <h6 class="card-title">NMI Klasik (LFK)</h6>
-          <h2 class="mb-0">{{ nmi_lfk }}</h2>
-          <small class="d-block mt-2">Normalisasi Lancichinetti-Fortunato-Kertész</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card bg-dark text-white">
-        <div class="card-body">
-          <h6 class="card-title">NMI_max (McDaid)</h6>
-          <h2 class="mb-0">{{ nmi_max }}</h2>
-          <small class="d-block mt-2">Normalisasi McDaid-Greene-Hurley</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card bg-dark text-white" style="background-color: #495057 !important;">
-        <div class="card-body">
-          <h6 class="card-title">rNMI (Relative)</h6>
-          <h2 class="mb-0">{{ rnmi }}</h2>
-          <small class="d-block mt-2">Pan Zhang - Adjusted for Randomness</small>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="alert alert-info">
-    <i class="fas fa-info-circle"></i> <strong>NMI Metrics:</strong> Metrik ini membandingkan hasil deteksi dengan ground truth. 
-    Nilai lebih tinggi = lebih baik (range 0-1). rNMI bisa negatif jika performa lebih buruk dari acak.
-  </div>
-  {% endif %}
-
-  <div class="row mb-4">
-    <div class="col-md-6">
-      <div class="card bg-info text-white">
-        <div class="card-body">
+    <!-- Total Nodes -->
+    <div class="col-md-3">
+      <div class="card bg-info text-white h-100 shadow-sm">
+        <div class="card-body text-center">
           <h6 class="card-title">Total Nodes</h6>
           <h2 class="mb-0">{{ total_nodes }}</h2>
         </div>
       </div>
     </div>
-    <div class="col-md-6">
-      <div class="card bg-info text-white">
-        <div class="card-body">
+
+    <!-- Total Edges -->
+    <div class="col-md-3">
+      <div class="card bg-info text-white h-100 shadow-sm">
+        <div class="card-body text-center">
           <h6 class="card-title">Total Edges</h6>
           <h2 class="mb-0">{{ total_edges }}</h2>
         </div>
       </div>
     </div>
+
   </div>
+
 
   <div class="card mb-4">
     <div class="card-body">
-      <h5 class="card-title">Parameter yang Digunakan</h5>
+      <h5 class="card-title section-heading">Parameter yang Digunakan</h5>
       <div class="row">
-        <div class="col-md-6">
-          <p class="mb-1"><strong>α (Alpha):</strong> {{ alpha }}</p>
-        </div>
-        <div class="col-md-6">
-          <p class="mb-1"><strong>Threshold Jaccard:</strong> {{ jaccard_threshold }}</p>
-        </div>
+        
+          <p class="mb-1">α (Alpha)     :{{ alpha }}</p>
+      
+          <p class="mb-1">Threshold Jaccard : {{ jaccard_threshold }}</p>
+       
       </div>
     </div>
   </div>
