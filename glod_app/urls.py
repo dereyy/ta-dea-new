@@ -23,6 +23,9 @@ from .views import (
     glod_process,
     glod_result,
     download_community_data,
+    # Enrichment analysis views
+    enrichment_analysis,
+    download_enrichment_results,
 )
 
 urlpatterns = [
@@ -52,4 +55,8 @@ urlpatterns = [
     path('glod/process/', glod_process, name='glod_process'),
     path('glod/result/', glod_result, name='glod_result'),
     path('glod/download/', download_community_data, name='download_community_data'),
+    
+    # Enrichment Analysis routes
+    path('glod/enrichment/', enrichment_analysis, name='enrichment_analysis'),
+    path('glod/enrichment/download/', download_enrichment_results, name='download_enrichment_results'),
 ]

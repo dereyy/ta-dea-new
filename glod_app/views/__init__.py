@@ -43,7 +43,11 @@ _spec.loader.exec_module(_glod_original)
 glod_process = _glod_original.glod_process
 glod_result = _glod_original.glod_result
 download_community_data = _glod_original.download_community_data
+enrichment_analysis = _glod_original.enrichment_analysis
+download_enrichment_results = _glod_original.download_enrichment_results
+perform_enrichment_analysis = _glod_original.perform_enrichment_analysis
 GLODAlgorithm = _glod_original.GLODAlgorithm
+HAS_GPROFILER = _glod_original.HAS_GPROFILER
 
 __all__ = [
     # Uniprot
@@ -67,5 +71,9 @@ __all__ = [
     'glod_process',
     'glod_result',
     'download_community_data',
+    'enrichment_analysis',
+    'download_enrichment_results',
+    'perform_enrichment_analysis',
     'GLODAlgorithm',
+    'HAS_GPROFILER',
 ]

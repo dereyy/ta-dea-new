@@ -10,6 +10,21 @@ import csv
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Import GProfiler dengan lazy loading untuk menghindari error jika belum diinstall
+try:
+    from gprofiler import GProfiler
+    HAS_GPROFILER = True
+    logger.info("GProfiler module successfully loaded")
+except Exception as e:
+    HAS_GPROFILER = False
+    GProfiler = None
+    logger.warning(f"Failed to load GProfiler: {type(e).__name__}: {e}")
+
 
 
 class GLODAlgorithm:
@@ -1159,6 +1174,245 @@ def glod_process(request):
     return render(request, 'glod_app/process.html', context)
 
 
+def perform_enrichment_analysis(gene_list: List[str], organism: str = 'hsapiens', 
+                                sources: List[str] = None) -> Dict:
+    """
+    Melakukan enrichment analysis menggunakan GProfiler.
+    
+    Args:
+        gene_list: List dari gene symbols yang akan dianalisis
+        organism: Organisme ('hsapiens' untuk human, 'mmusculus' untuk mouse)
+        sources: List sumber data (GO:BP, GO:MF, GO:CC, KEGG, Reactome, etc)
+        
+    Returns:
+        Dictionary berisi hasil enrichment analysis atau error message
+    """
+    # Try import GProfiler fresh if not available at module level
+    gp = None
+    if HAS_GPROFILER:
+        gp = GProfiler
+    else:
+        # Coba import ulang
+        try:
+            from gprofiler import GProfiler as GProfilerFresh
+            gp = GProfilerFresh
+            logger.info("GProfiler imported successfully on-demand")
+        except ImportError as e:
+            logger.error(f"Failed to import GProfiler on-demand: {e}")
+            return {
+                'error': 'GProfiler belum diinstall. Silakan jalankan: pip install gprofiler-official',
+                'success': False
+            }
+    
+    if not gene_list or len(gene_list) == 0:
+        return {
+            'error': 'Daftar gene kosong. Tidak dapat melakukan analisis.',
+            'success': False
+        }
+    
+    # Default sources jika tidak ditentukan
+    if sources is None:
+        sources = ['GO:BP', 'GO:MF', 'GO:CC', 'KEGG']
+    
+    try:
+        logger.info(f"Starting enrichment analysis untuk {len(gene_list)} genes")
+        
+        # Inisialisasi GProfiler instance
+        gp_instance = gp(return_dataframe=True)
+        
+        # Jalankan profiling
+        results = gp_instance.profile(
+            organism=organism,
+            query=gene_list,
+            sources=sources,
+            user_threshold=0.05,  # p-value threshold
+            no_evidences=False
+        )
+        
+        if results is None or len(results) == 0:
+            return {
+                'error': 'Tidak ada hasil signifikan ditemukan untuk query ini.',
+                'success': False,
+                'gene_analyzed': len(gene_list)
+            }
+        
+        # Hitung -log10(p-value)
+        results['-log10p'] = -np.log10(results['p_value'])
+        
+        # Pilih dan urutkan kolom yang relevan
+        display_columns = ['source', 'native', 'name', 'p_value', '-log10p', 'significant']
+        results_display = results[display_columns].sort_values(by='-log10p', ascending=False)
+        
+        logger.info(f"Enrichment analysis selesai dengan {len(results_display)} hasil")
+        
+        return {
+            'success': True,
+            'gene_analyzed': len(gene_list),
+            'total_results': len(results_display),
+            'data': results_display.head(20).to_dict('records'),  # Top 20 results
+            'all_data': results_display.to_dict('records')  # Semua results untuk download
+        }
+        
+    except Exception as e:
+        logger.error(f"Error saat melakukan enrichment analysis: {str(e)}")
+        return {
+            'error': f'Error saat melakukan enrichment analysis: {str(e)}',
+            'success': False
+        }
+
+
+
+@require_http_methods(["POST"])
+@csrf_exempt
+def enrichment_analysis(request):
+    """
+    API endpoint untuk melakukan enrichment analysis pada komunitas tertentu.
+    """
+    try:
+        # Ambil community_id dan gene list dari request
+        community_id = request.POST.get('community_id')
+        genes_json = request.POST.get('genes_json')
+        organism = request.POST.get('organism', 'hsapiens')
+        
+        if not genes_json:
+            return HttpResponse(json.dumps({
+                'success': False,
+                'error': 'Gene list tidak ditemukan'
+            }), content_type='application/json')
+        
+        # Parse gene list
+        gene_list = json.loads(genes_json)
+        
+        # Perform enrichment analysis
+        result = perform_enrichment_analysis(gene_list, organism=organism)
+        
+        # Tambahkan community_id ke result
+        result['community_id'] = community_id
+        
+        return HttpResponse(json.dumps(result, default=str), content_type='application/json')
+        
+    except json.JSONDecodeError:
+        return HttpResponse(json.dumps({
+            'success': False,
+            'error': 'Format JSON tidak valid'
+        }), content_type='application/json')
+    except Exception as e:
+        logger.error(f"Error di enrichment_analysis endpoint: {str(e)}")
+        return HttpResponse(json.dumps({
+            'success': False,
+            'error': f'Server error: {str(e)}'
+        }), content_type='application/json')
+
+
+@require_http_methods(["POST"])
+@csrf_exempt
+def download_enrichment_results(request):
+    """
+    Download hasil enrichment analysis dalam format CSV atau XLSX
+    """
+    try:
+        results_json = request.POST.get('results_json')
+        format_type = request.POST.get('format', 'csv').lower()
+        community_id = request.POST.get('community_id', 'unknown')
+        
+        if not results_json:
+            return HttpResponse('Data tidak ditemukan', status=400)
+        
+        results_data = json.loads(results_json)
+        
+        if format_type == 'xlsx':
+            return generate_enrichment_xlsx(results_data, community_id)
+        else:
+            return generate_enrichment_csv(results_data, community_id)
+            
+    except Exception as e:
+        logger.error(f"Error download enrichment results: {str(e)}")
+        return HttpResponse(f'Error: {str(e)}', status=500)
+
+
+def generate_enrichment_csv(results_data: List[Dict], community_id: str) -> HttpResponse:
+    """Generate CSV file dari hasil enrichment analysis"""
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="enrichment_komunitas_{community_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    # Tulis BOM untuk Excel supaya bisa baca UTF-8
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    
+    # Header
+    if results_data:
+        headers = list(results_data[0].keys())
+        writer.writerow(headers)
+        
+        # Data
+        for row in results_data:
+            writer.writerow([row.get(header, '') for header in headers])
+    
+    return response
+
+
+def generate_enrichment_xlsx(results_data: List[Dict], community_id: str) -> HttpResponse:
+    """Generate XLSX file dari hasil enrichment analysis"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f'Enrichment Komunitas {community_id}'
+    
+    # Define styles
+    header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    center_alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+    
+    # Headers
+    if results_data:
+        headers = list(results_data[0].keys())
+        
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num)
+            cell.value = header
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 12
+        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['C'].width = 40
+        ws.column_dimensions['D'].width = 15
+        ws.column_dimensions['E'].width = 15
+        ws.column_dimensions['F'].width = 12
+        
+        # Data
+        for row_num, data_row in enumerate(results_data, 2):
+            for col_num, header in enumerate(headers, 1):
+                cell = ws.cell(row=row_num, column=col_num)
+                cell.value = data_row.get(header, '')
+                cell.border = border
+                cell.alignment = center_alignment
+    
+    # Freeze header row
+    ws.freeze_panes = 'A2'
+    
+    # Create response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="enrichment_komunitas_{community_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+    
+    wb.save(response)
+    return response
+
+
 @require_http_methods(["POST"])
 def glod_result(request):
     """Proses algoritma GLOD dan tampilkan hasil"""
@@ -1232,10 +1486,14 @@ def glod_result(request):
             # Hitung overlap untuk komunitas ini
             overlap_in_community = community & overlapping_nodes
             
+            # Buat JSON string untuk members (untuk digunakan di template)
+            members_list = sorted(list(community))
+            
             community_results.append({
                 'id': idx,
                 'size': len(community),
-                'members': sorted(list(community)),
+                'members': members_list,
+                'members_json': json.dumps(members_list),  # JSON string untuk JavaScript
                 'overlap_count': len(overlap_in_community),
                 'overlap_members': sorted(list(overlap_in_community)),
                 'psi': round(psi_value, 4)
